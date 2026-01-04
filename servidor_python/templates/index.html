@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏠 Casa Domótica - Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles_premium.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon">🏠</span>
+                    <span class="logo-text">SmartHome</span>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <a href="/" class="nav-item active">
+                        <span class="nav-icon">📊</span>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="/control" class="nav-item">
+                        <span class="nav-icon">🎮</span>
+                        <span>Control</span>
+                    </a>
+                    <a href="/historial" class="nav-item">
+                        <span class="nav-icon">📈</span>
+                        <span>Historial</span>
+                    </a>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-label">Configuración</div>
+                    <a href="#" class="nav-item">
+                        <span class="nav-icon">👤</span>
+                        <span>Perfil</span>
+                    </a>
+                    <a href="#" class="nav-item">
+                        <span class="nav-icon">⚙️</span>
+                        <span>Ajustes</span>
+                    </a>
+                </div>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="help-card">
+                    <div class="help-title">¿Necesitas ayuda?</div>
+                    <div class="help-text">Revisa nuestra documentación</div>
+                    <button class="help-button">Aprender más</button>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- CONTENIDO PRINCIPAL -->
+        <main class="main-content">
+            
+            <!-- TOPBAR -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <h1>Dashboard</h1>
+                    <p class="topbar-subtitle">Monitoreo en tiempo real de tu hogar inteligente</p>
+                </div>
+                <div class="topbar-right">
+                    <div class="date-range">
+                        <span>📅</span>
+                        <span id="dateRange">Últimas 24 horas</span>
+                    </div>
+                    <div class="status-badge">
+                        <div class="status-dot" id="statusDot"></div>
+                        <span id="statusText">Conectando...</span>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- CONTENIDO -->
+            <div class="content">
+                
+                <!-- MÉTRICAS PRINCIPALES -->
+                <div class="metrics-row">
+                    <!-- TEMPERATURA -->
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <div class="metric-info">
+                                <div class="metric-label">Temperatura</div>
+                                <div class="metric-value">
+                                    <span id="temperatura">--</span><span class="metric-unit">°C</span>
+                                </div>
+                            </div>
+                            <div class="metric-icon">🌡️</div>
+                        </div>
+                        <div class="metric-footer">
+                            <span class="metric-badge badge-success" id="tempBadge">Normal</span>
+                        </div>
+                    </div>
+                    
+                    <!-- HUMEDAD AMBIENTAL -->
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <div class="metric-info">
+                                <div class="metric-label">Humedad Ambiental</div>
+                                <div class="metric-value">
+                                    <span id="humedad">--</span><span class="metric-unit">%</span>
+                                </div>
+                            </div>
+                            <div class="metric-icon">💧</div>
+                        </div>
+                        <div class="metric-footer">
+                            <span class="metric-badge badge-info" id="humBadge">Óptima</span>
+                        </div>
+                    </div>
+                    
+                    <!-- HUMEDAD DEL SUELO -->
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <div class="metric-info">
+                                <div class="metric-label">Humedad del Suelo</div>
+                                <div class="metric-value">
+                                    <span id="humedadSuelo">--</span><span class="metric-unit">%</span>
+                                </div>
+                            </div>
+                            <div class="metric-icon">🌱</div>
+                        </div>
+                        <div class="metric-footer">
+                            <span class="metric-badge badge-success" id="sueloBadge">Adecuada</span>
+                        </div>
+                    </div>
+                    
+                    <!-- ÚLTIMA ACTUALIZACIÓN -->
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <div class="metric-info">
+                                <div class="metric-label">Última Actualización</div>
+                                <div class="metric-value" style="font-size: 1.5rem;">
+                                    <span id="ultimaActualizacion">--:--:--</span>
+                                </div>
+                            </div>
+                            <div class="metric-icon">⏱️</div>
+                        </div>
+                        <div class="metric-footer">
+                            <span class="metric-badge badge-info">Tiempo real</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- GRÁFICAS -->
+                <div class="charts-section">
+                    <!-- GRÁFICA PRINCIPAL -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <div>
+                                <div class="chart-title">Temperatura & Humedad</div>
+                                <div class="chart-subtitle">Últimas 24 horas</div>
+                            </div>
+                            <span class="chart-action">Ver más</span>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="chartTempHum"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- GRÁFICA CIRCULAR -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <div>
+                                <div class="chart-title">Humedad del Suelo</div>
+                                <div class="chart-subtitle">Últimas 24 horas</div>
+                            </div>
+                            <span class="chart-action">Ver más</span>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="chartSuelo"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- ACTUADORES -->
+                <div class="section-card mb-3">
+                    <div class="section-header">
+                        <div class="section-title">Estado de Actuadores</div>
+                        <span class="section-action">Ver todos</span>
+                    </div>
+                    <div class="actuators-grid">
+                        <div class="actuator-card">
+                            <div class="actuator-icon">🌀</div>
+                            <div class="actuator-name">Ventilador</div>
+                            <div class="actuator-status inactive" id="ventiladorStatus">OFF</div>
+                            <div class="actuator-label">Control automático</div>
+                        </div>
+                        <div class="actuator-card">
+                            <div class="actuator-icon">💧</div>
+                            <div class="actuator-name">Bomba de Agua</div>
+                            <div class="actuator-status inactive" id="bombaStatus">OFF</div>
+                            <div class="actuator-label">Sistema de riego</div>
+                        </div>
+                        <div class="actuator-card">
+                            <div class="actuator-icon">🔄</div>
+                            <div class="actuator-name">Servomotor</div>
+                            <div class="actuator-status" id="servoStatus">90°</div>
+                            <div class="actuator-label">Posición actual</div>
+                        </div>
+                        <div class="actuator-card">
+                            <div class="actuator-icon">💡</div>
+                            <div class="actuator-name">Iluminación</div>
+                            <div class="actuator-status inactive" id="ledsStatus">0/4</div>
+                            <div class="actuator-label">LEDs activos</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- SECCIÓN INFERIOR -->
+                <div class="bottom-section">
+                    <!-- OBJETIVO DE AHORRO -->
+                    <div class="section-card">
+                        <div class="section-header">
+                            <div class="section-title">Eficiencia Energética</div>
+                            <span class="section-action">Editar</span>
+                        </div>
+                        <div class="goal-progress">
+                            <div class="goal-text">Progreso del mes</div>
+                            <div class="goal-amount">
+                                <span id="eficienciaValor">78</span>
+                                <span class="metric-unit">%</span>
+                            </div>
+                            <div class="goal-target">Objetivo: 85% de eficiencia</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="eficienciaBar" style="width: 78%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- INFORMACIÓN -->
+                    <div class="section-card">
+                        <div class="section-header">
+                            <div class="section-title">Sistema de Automatización</div>
+                        </div>
+                        <div class="info-box">
+                            <div class="info-text">
+                                Tu sistema está optimizado para mantener condiciones ideales en tu hogar. 
+                                El ventilador y la bomba se activan automáticamente según los umbrales configurados.
+                            </div>
+                            <a href="/control" class="info-button">Configurar ahora</a>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </main>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/dashboard_premium.js') }}"></script>
+</body>
+</html>
