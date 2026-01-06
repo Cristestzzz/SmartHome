@@ -106,7 +106,7 @@ def ultimo_estado():
         
         if sensores and len(sensores) > 0:
             ultimo_sensor = sensores[0]
-            return jsonify({
+            response = jsonify({
                 "sensores": {
                     "temperatura": ultimo_sensor[1],
                     "humedad": ultimo_sensor[2],
@@ -116,7 +116,12 @@ def ultimo_estado():
                     "timestamp": str(ultimo_sensor[6])
                 },
                 "actuadores": actuadores if actuadores else {}
-            }), 200
+            })
+            # Prevenir caché del navegador
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+            return response, 200
         else:
             return jsonify({"mensaje": "No hay datos disponibles"}), 404
             
@@ -154,7 +159,12 @@ def obtener_historial():
                 "timestamp": str(lectura[6])
             })
         
-        return jsonify(historial), 200
+        response = jsonify(historial)
+        # Prevenir caché del navegador
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        return response, 200
         
     except Exception as e:
         print(f"Error en /api/historial: {e}")
