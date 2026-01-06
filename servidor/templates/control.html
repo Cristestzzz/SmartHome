@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎮 Control - Casa Domótica</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles_premium.css') }}">
+    <link rel="stylesheet" href="/static/css/styles_premium.css">
     <style>
         .control-card {
             background: var(--bg-card);
@@ -296,7 +296,7 @@
                     </div>
                 </div>
                 
-                <!-- CONTROLES MANUALES -->
+                <!-- CONTROLES MANUALES (Ventilador, Bomba, Servo) -->
                 <div class="control-card disabled-overlay" id="controlesCard">
                     <h2 style="margin-bottom: 1rem;">Controles Manuales</h2>
                     
@@ -329,6 +329,41 @@
                             <div class="control-status" id="statusServo">90°</div>
                         </div>
                         <input type="range" min="0" max="180" value="90" class="slider" id="sliderServo" oninput="cambiarServo(this.value)">
+                    </div>
+                </div>
+                
+                <!-- CONTROL DE LEDs (SIEMPRE DISPONIBLE) -->
+                <div class="control-card">
+                    <h2 style="margin-bottom: 0.5rem;">💡 Control de Iluminación</h2>
+                    <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1.5rem;">
+                        Los LEDs se pueden controlar en cualquier momento
+                    </p>
+                    
+                    <!-- LED CUARTO 1 -->
+                    <div class="control-item">
+                        <div class="control-info">
+                            <div class="control-name">💡 LED Cuarto 1</div>
+                            <div class="control-status" id="statusLedCuarto1">Apagado</div>
+                        </div>
+                        <div class="toggle-switch" id="toggleLedCuarto1" onclick="toggleLED('cuarto1')"></div>
+                    </div>
+                    
+                    <!-- LED CUARTO 2 -->
+                    <div class="control-item">
+                        <div class="control-info">
+                            <div class="control-name">💡 LED Cuarto 2</div>
+                            <div class="control-status" id="statusLedCuarto2">Apagado</div>
+                        </div>
+                        <div class="toggle-switch" id="toggleLedCuarto2" onclick="toggleLED('cuarto2')"></div>
+                    </div>
+                    
+                    <!-- LED CUARTO 3 -->
+                    <div class="control-item">
+                        <div class="control-info">
+                            <div class="control-name">💡 LED Cuarto 3</div>
+                            <div class="control-status" id="statusLedCuarto3">Apagado</div>
+                        </div>
+                        <div class="toggle-switch" id="toggleLedCuarto3" onclick="toggleLED('cuarto3')"></div>
                     </div>
                 </div>
                 
@@ -374,6 +409,13 @@
         let estadoVentilador = false;
         let estadoBomba = false;
         let anguloServo = 90;
+        
+        // Estados de LEDs
+        let estadoLEDs = {
+            cuarto1: false,
+            cuarto2: false,
+            cuarto3: false
+        };
         
         // Cargar modo actual al iniciar
         window.addEventListener('DOMContentLoaded', async function() {
@@ -449,7 +491,7 @@
                 }
             } catch (error) {
                 console.error('Error:', error);
-                estadoVentilador = !estadoVentilador; // Revertir
+                estadoVentilador = !estadoVentilador;
             }
         }
         
@@ -557,6 +599,50 @@
             } catch (error) {
                 console.error('Error:', error);
                 alert('✗ Error al guardar configuración');
+            }
+        }
+        
+        // ========== FUNCIONES LEDs ==========
+        async function toggleLED(nombre) {
+            estadoLEDs[nombre] = !estadoLEDs[nombre];
+            
+            try {
+                await fetch('/api/control/led', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        nombre: nombre,
+                        estado: estadoLEDs[nombre]
+                    })
+                });
+                actualizarUILED(nombre);
+            } catch (error) {
+                console.error('Error:', error);
+                estadoLEDs[nombre] = !estadoLEDs[nombre];
+            }
+        }
+        
+        function actualizarUILED(nombre) {
+            const nombreCapital = nombre.charAt(0).toUpperCase() + nombre.slice(1);
+            const toggle = document.getElementById('toggleLed' + nombreCapital);
+            const status = document.getElementById('statusLed' + nombreCapital);
+            
+            console.log('Actualizando LED:', nombre, 'Estado:', estadoLEDs[nombre]);
+            console.log('Toggle ID:', 'toggleLed' + nombreCapital, 'Elemento:', toggle);
+            
+            if (!toggle || !status) {
+                console.error('No se encontraron elementos para LED:', nombre);
+                return;
+            }
+            
+            if (estadoLEDs[nombre]) {
+                toggle.classList.add('active');
+                status.textContent = 'Encendido';
+                status.style.color = 'var(--accent-success)';
+            } else {
+                toggle.classList.remove('active');
+                status.textContent = 'Apagado';
+                status.style.color = 'var(--text-muted)';
             }
         }
     </script>

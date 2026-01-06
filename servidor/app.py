@@ -265,24 +265,25 @@ def controlar_servo():
 
 @app.route('/api/control/led', methods=['POST'])
 def controlar_led():
-    """Control manual de LEDs"""
+    """Control manual de LEDs individuales"""
     try:
-        if sistema_estado['modo'] != 'manual':
-            return jsonify({"error": "Sistema en modo automático"}), 400
         
         data = request.get_json()
-        cuarto = data.get('cuarto')
+        nombre = data.get('nombre')  # sala, cocina, cuarto, bano, pasillo
         estado = data.get('estado', False)
         
-        if not cuarto:
-            return jsonify({"error": "Debe especificar el cuarto"}), 400
+        if not nombre:
+            return jsonify({"error": "Debe especificar el nombre del LED"}), 400
         
-        sistema_estado['comandos_pendientes']['leds'][cuarto] = estado
-        print(f"💡 Comando LED {cuarto}: {'ON' if estado else 'OFF'}")
+        if 'leds' not in sistema_estado['comandos_pendientes']:
+            sistema_estado['comandos_pendientes']['leds'] = {}
+        
+        sistema_estado['comandos_pendientes']['leds'][nombre] = estado
+        print(f"💡 Comando LED {nombre}: {'ON' if estado else 'OFF'}")
         
         return jsonify({
             "status": "success",
-            "cuarto": cuarto,
+            "led": nombre,
             "estado": estado
         }), 200
         
@@ -317,6 +318,7 @@ def obtener_comandos():
     except Exception as e:
         print(f"Error en /api/comandos: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/api/configuracion', methods=['GET', 'POST'])
 def configuracion():

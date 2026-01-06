@@ -1,14 +1,14 @@
 /*
  * ========================================
- * ESP32 RECEPTOR - SISTEMA COMPLETO
+ * ESP32 RECEPTOR - CON 5 LEDs
  * ========================================
  * Compatible con ESP32 core v2.x y v3.x
  * Compatible con ArduinoJson v7.x
  * 
- * - Recibe datos vía ESP-NOW
- * - Control automático por sensores
- * - Control manual desde servidor web
- * - Polling de comandos del servidor
+ * Incluye:
+ * - 5 LEDs controlables desde web
+ * - Control manual/automático
+ * - Configuración dinámica
  */
 
 #include <esp_now.h>
@@ -23,23 +23,28 @@ const char* WIFI_SSID = "GAUTAMA";
 const char* WIFI_PASSWORD = "gautama2024";
 
 // URLs del servidor - CAMBIAR LA IP
-const char* SERVER_URL_DATOS = "http://192.168.0.34:5000/api/datos/datos";
-const char* SERVER_URL_COMANDOS = "http://192.168.0.34:5000/api/comandos";
+const char* SERVER_URL_DATOS = "http://192.168.0.5:5000/api/datos/datos";
+const char* SERVER_URL_COMANDOS = "http://192.168.0.5:5000/api/comandos";
 
 // Pines
 #define MOTOR_PIN 27      // Ventilador
 #define BOMBA_PIN 26      // Bomba de agua
 
-// Umbrales automáticos (se pueden actualizar desde servidor)
+// LEDs - 3 LEDs controlables
+#define LED_CUARTO1 33
+#define LED_CUARTO2 12
+#define LED_CUARTO3 14
+
+// Umbrales automáticos
 float TEMP_ACTIVACION = 30.0;
 float TEMP_DESACTIVACION = 28.0;
 int HUMEDAD_SUELO_SECO = 30;
 int HUMEDAD_SUELO_HUMEDO = 70;
 
 // Intervalos
-#define ENVIO_SERVIDOR_INTERVALO 10000   // 10s
-#define POLLING_COMANDOS_INTERVALO 5000  // 5s
-#define TIMEOUT_SIN_DATOS 15000          // 15s
+#define ENVIO_SERVIDOR_INTERVALO 10000
+#define POLLING_COMANDOS_INTERVALO 5000
+#define TIMEOUT_SIN_DATOS 15000
 
 // ==================== VARIABLES GLOBALES ====================
 
@@ -53,10 +58,15 @@ typedef struct struct_message {
 struct_message datosRecibidos;
 
 // Estado del sistema
-String modoActual = "automatico";  // "automatico" o "manual"
+String modoActual = "automatico";
 bool motorActivo = false;
 bool bombaActiva = false;
 int servoAngulo = 90;
+
+// Estado de LEDs
+bool ledCuarto1 = false;
+bool ledCuarto2 = false;
+bool ledCuarto3 = false;
 
 // Control de tiempo
 unsigned long ultimoDatoRecibido = 0;
@@ -88,48 +98,39 @@ void conectarWiFi() {
     Serial.println("\n✓ WiFi conectado exitosamente");
     Serial.print("IP asignada: ");
     Serial.println(WiFi.localIP());
-    Serial.print("Gateway: ");
-    Serial.println(WiFi.gatewayIP());
     Serial.print("⚠️  CANAL WiFi: ");
     Serial.println(WiFi.channel());
-    Serial.println("   ← ANOTA ESTE CANAL para configurar EMISOR");
   } else {
     wifiConectado = false;
     Serial.println("\n✗ WiFi NO conectado");
-    Serial.println("⚠️  VERIFICA:");
-    Serial.print("   SSID: ");
-    Serial.println(WIFI_SSID);
-    Serial.println("   Password: [oculto]");
-    Serial.println("   ¿Router encendido?");
   }
 }
 
 void controlarMotor(bool activar) {
   if (activar == motorActivo) return;
   
-  if (activar) {
-    digitalWrite(MOTOR_PIN, HIGH);
-    motorActivo = true;
-    Serial.println("🌀 MOTOR ENCENDIDO");
-  } else {
-    digitalWrite(MOTOR_PIN, LOW);
-    motorActivo = false;
-    Serial.println("⏹️  MOTOR APAGADO");
-  }
+  digitalWrite(MOTOR_PIN, activar ? HIGH : LOW);
+  motorActivo = activar;
+  Serial.println(activar ? "🌀 MOTOR ENCENDIDO" : "⏹️  MOTOR APAGADO");
 }
 
 void controlarBomba(bool activar) {
   if (activar == bombaActiva) return;
   
-  if (activar) {
-    digitalWrite(BOMBA_PIN, HIGH);
-    bombaActiva = true;
-    Serial.println("💧 BOMBA ENCENDIDA (Regando...)");
-  } else {
-    digitalWrite(BOMBA_PIN, LOW);
-    bombaActiva = false;
-    Serial.println("🚫 BOMBA APAGADA");
-  }
+  digitalWrite(BOMBA_PIN, activar ? HIGH : LOW);
+  bombaActiva = activar;
+  Serial.println(activar ? "💧 BOMBA ENCENDIDA" : "🚫 BOMBA APAGADA");
+}
+
+void controlarLED(int pin, bool &estado, bool activar, const char* nombre) {
+  if (activar == estado) return;
+  
+  digitalWrite(pin, activar ? HIGH : LOW);
+  estado = activar;
+  
+  Serial.print("💡 LED ");
+  Serial.print(nombre);
+  Serial.println(activar ? " ON" : " OFF");
 }
 
 void enviarDatosServidor() {
@@ -140,8 +141,7 @@ void enviarDatosServidor() {
   http.addHeader("Content-Type", "application/json");
   http.setTimeout(5000);
   
-  // Crear JSON usando ArduinoJson v7
-  JsonDocument doc;  // En v7 se usa JsonDocument en lugar de StaticJsonDocument
+  JsonDocument doc;
   
   JsonObject sensores = doc["sensores"].to<JsonObject>();
   sensores["temperatura"] = datosRecibidos.temperatura;
@@ -156,7 +156,9 @@ void enviarDatosServidor() {
   actuadores["bomba_activa"] = bombaActiva;
   
   JsonObject leds = actuadores["leds"].to<JsonObject>();
-  leds["cuarto1"] = motorActivo;
+  leds["cuarto1"] = ledCuarto1;
+  leds["cuarto2"] = ledCuarto2;
+  leds["cuarto3"] = ledCuarto3;
   
   String json;
   serializeJson(doc, json);
@@ -164,12 +166,12 @@ void enviarDatosServidor() {
   int httpCode = http.POST(json);
   
   if (httpCode == 200) {
-    Serial.println("✓ Datos enviados al servidor");
+    Serial.println("✓ Datos enviados");
   } else if (httpCode > 0) {
     Serial.print("⚠️  HTTP ");
     Serial.println(httpCode);
   } else {
-    Serial.println("✗ Error HTTP");
+    Serial.println("✗ Error conexión servidor");
   }
   
   http.end();
@@ -187,96 +189,106 @@ void consultarComandos() {
   if (httpCode == 200) {
     String payload = http.getString();
     
-    // Parsear JSON usando ArduinoJson v7
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, payload);
     
     if (!error) {
+      
       // Obtener modo
       if (doc.containsKey("modo")) {
         String nuevoModo = doc["modo"].as<String>();
         if (nuevoModo != modoActual) {
           modoActual = nuevoModo;
-          Serial.print("🔄 Modo cambiado a: ");
+          Serial.print("🔄 Modo: ");
           Serial.println(modoActual);
         }
       }
       
-      // Obtener configuración de umbrales
+      // Obtener configuración
       if (doc.containsKey("configuracion")) {
         JsonObject config = doc["configuracion"].as<JsonObject>();
-        
-        bool cambioConfig = false;
+        bool cambio = false;
         
         if (config.containsKey("temp_activacion")) {
-          float nuevoValor = config["temp_activacion"].as<float>();
-          if (nuevoValor != TEMP_ACTIVACION) {
-            TEMP_ACTIVACION = nuevoValor;
-            cambioConfig = true;
+          float val = config["temp_activacion"].as<float>();
+          if (val != TEMP_ACTIVACION) {
+            TEMP_ACTIVACION = val;
+            cambio = true;
           }
         }
         
         if (config.containsKey("temp_desactivacion")) {
-          float nuevoValor = config["temp_desactivacion"].as<float>();
-          if (nuevoValor != TEMP_DESACTIVACION) {
-            TEMP_DESACTIVACION = nuevoValor;
-            cambioConfig = true;
+          float val = config["temp_desactivacion"].as<float>();
+          if (val != TEMP_DESACTIVACION) {
+            TEMP_DESACTIVACION = val;
+            cambio = true;
           }
         }
         
         if (config.containsKey("humedad_suelo_seco")) {
-          int nuevoValor = config["humedad_suelo_seco"].as<int>();
-          if (nuevoValor != HUMEDAD_SUELO_SECO) {
-            HUMEDAD_SUELO_SECO = nuevoValor;
-            cambioConfig = true;
+          int val = config["humedad_suelo_seco"].as<int>();
+          if (val != HUMEDAD_SUELO_SECO) {
+            HUMEDAD_SUELO_SECO = val;
+            cambio = true;
           }
         }
         
         if (config.containsKey("humedad_suelo_humedo")) {
-          int nuevoValor = config["humedad_suelo_humedo"].as<int>();
-          if (nuevoValor != HUMEDAD_SUELO_HUMEDO) {
-            HUMEDAD_SUELO_HUMEDO = nuevoValor;
-            cambioConfig = true;
+          int val = config["humedad_suelo_humedo"].as<int>();
+          if (val != HUMEDAD_SUELO_HUMEDO) {
+            HUMEDAD_SUELO_HUMEDO = val;
+            cambio = true;
           }
         }
         
-        if (cambioConfig) {
-          Serial.println("\n⚙️  CONFIGURACIÓN ACTUALIZADA:");
-          Serial.print("   Temp ON: ");
+        if (cambio) {
+          Serial.println("\n⚙️  CONFIG ACTUALIZADA:");
+          Serial.print("   Temp: ");
           Serial.print(TEMP_ACTIVACION);
-          Serial.print("°C | Temp OFF: ");
+          Serial.print("°C / ");
           Serial.print(TEMP_DESACTIVACION);
           Serial.println("°C");
-          Serial.print("   Suelo SECO: ");
+          Serial.print("   Suelo: ");
           Serial.print(HUMEDAD_SUELO_SECO);
-          Serial.print("% | Suelo HÚMEDO: ");
+          Serial.print("% / ");
           Serial.print(HUMEDAD_SUELO_HUMEDO);
           Serial.println("%\n");
         }
       }
       
-      // Si está en modo manual, aplicar comandos
+      // Comandos manuales (solo ventilador, bomba, servo)
       if (modoActual == "manual" && doc.containsKey("comandos")) {
         JsonObject comandos = doc["comandos"].as<JsonObject>();
         
-        // Ventilador
         if (comandos.containsKey("ventilador")) {
-          bool estado = comandos["ventilador"].as<bool>();
-          controlarMotor(estado);
+          controlarMotor(comandos["ventilador"].as<bool>());
         }
         
-        // Bomba
         if (comandos.containsKey("bomba")) {
-          bool estado = comandos["bomba"].as<bool>();
-          controlarBomba(estado);
+          controlarBomba(comandos["bomba"].as<bool>());
         }
         
-        // Servo
         if (comandos.containsKey("servo")) {
           servoAngulo = comandos["servo"].as<int>();
-          Serial.print("🔄 Servo: ");
-          Serial.print(servoAngulo);
-          Serial.println("°");
+        }
+      }
+      
+      // LEDs SIEMPRE controlables (independiente del modo)
+      if (doc.containsKey("comandos")) {
+        JsonObject comandos = doc["comandos"].as<JsonObject>();
+        
+        if (comandos.containsKey("leds")) {
+          JsonObject leds = comandos["leds"].as<JsonObject>();
+          
+          if (leds.containsKey("cuarto1")) {
+            controlarLED(LED_CUARTO1, ledCuarto1, leds["cuarto1"].as<bool>(), "Cuarto1");
+          }
+          if (leds.containsKey("cuarto2")) {
+            controlarLED(LED_CUARTO2, ledCuarto2, leds["cuarto2"].as<bool>(), "Cuarto2");
+          }
+          if (leds.containsKey("cuarto3")) {
+            controlarLED(LED_CUARTO3, ledCuarto3, leds["cuarto3"].as<bool>(), "Cuarto3");
+          }
         }
       }
     }
@@ -288,22 +300,18 @@ void consultarComandos() {
 void controlAutomatico() {
   if (!datosDisponibles) return;
   
-  // Control ventilador por temperatura
   if (datosRecibidos.temperatura >= TEMP_ACTIVACION) {
     controlarMotor(true);
   } else if (datosRecibidos.temperatura <= TEMP_DESACTIVACION) {
     controlarMotor(false);
   }
   
-  // Control bomba por humedad del suelo
   if (datosRecibidos.humedad_suelo < HUMEDAD_SUELO_SECO) {
     controlarBomba(true);
   } else if (datosRecibidos.humedad_suelo > HUMEDAD_SUELO_HUMEDO) {
     controlarBomba(false);
   }
 }
-
-// ==================== CALLBACKS ESP-NOW ====================
 
 #if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
 void OnDataRecv(const esp_now_recv_info_t *info, const uint8_t *incomingData, int len) {
@@ -315,76 +323,63 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len) {
   datosDisponibles = true;
   ultimoDatoRecibido = millis();
   
-  // Mostrar datos
-  Serial.print("📊 Temp: ");
+  Serial.print("📊 ");
   Serial.print(datosRecibidos.temperatura, 1);
-  Serial.print("°C | Hum: ");
+  Serial.print("°C | ");
   Serial.print(datosRecibidos.humedad, 1);
-  Serial.print("% | Suelo: ");
+  Serial.print("% | S:");
   Serial.print(datosRecibidos.humedad_suelo);
-  Serial.print("% | Modo: ");
-  Serial.println(modoActual);
+  Serial.println("%");
   
-  // Aplicar control según modo
   if (modoActual == "automatico") {
     controlAutomatico();
   }
-  // En modo manual, los comandos se aplican desde consultarComandos()
 }
-
-// ==================== SETUP ====================
 
 void setup() {
   Serial.begin(115200);
   delay(2000);
   
-  Serial.println("\n==================================================");
-  Serial.println("     ESP32 RECEPTOR - SISTEMA COMPLETO");
-  Serial.println("==================================================");
+  Serial.println("\n==== ESP32 RECEPTOR - 5 LEDs ====");
   
-  // Configurar pines
+  // Pines actuadores
   pinMode(MOTOR_PIN, OUTPUT);
   pinMode(BOMBA_PIN, OUTPUT);
   digitalWrite(MOTOR_PIN, LOW);
   digitalWrite(BOMBA_PIN, LOW);
-  Serial.println("✓ Actuadores inicializados (OFF)");
   
-  // Conectar WiFi
+  // Pines LEDs
+  pinMode(LED_CUARTO1, OUTPUT);
+  pinMode(LED_CUARTO2, OUTPUT);
+  pinMode(LED_CUARTO3, OUTPUT);
+  digitalWrite(LED_CUARTO1, LOW);
+  digitalWrite(LED_CUARTO2, LOW);
+  digitalWrite(LED_CUARTO3, LOW);
+  
+  Serial.println("✓ Actuadores y LEDs inicializados");
+  
   conectarWiFi();
   
-  // Obtener MAC
-  Serial.println("\n--------------------------------------------------");
   Serial.print("Mi MAC: ");
   Serial.println(WiFi.macAddress());
-  Serial.println("← Configura esta MAC en el EMISOR");
-  Serial.println("--------------------------------------------------");
   
-  // Inicializar ESP-NOW
   if (esp_now_init() != ESP_OK) {
-    Serial.println("✗ Error inicializando ESP-NOW");
-    while(1) { delay(1000); }
+    Serial.println("✗ Error ESP-NOW");
+    while(1);
   }
-  Serial.println("✓ ESP-NOW inicializado");
   
-  // Registrar callback
   esp_now_register_recv_cb(OnDataRecv);
   
-  Serial.println("\n✓ Sistema listo");
-  Serial.println("Modo: AUTOMÁTICO (default)");
-  Serial.println("Esperando datos del EMISOR...");
-  Serial.println("==================================================\n");
+  Serial.println("✓ Sistema listo\n");
   
   ultimoDatoRecibido = millis();
   ultimoEnvioServidor = millis();
   ultimoPollingComandos = millis();
 }
 
-// ==================== LOOP ====================
-
 void loop() {
   unsigned long ahora = millis();
   
-  // Enviar datos al servidor cada 10s
   if (wifiConectado && (ahora - ultimoEnvioServidor >= ENVIO_SERVIDOR_INTERVALO)) {
     if (datosDisponibles) {
       enviarDatosServidor();
@@ -392,24 +387,19 @@ void loop() {
     ultimoEnvioServidor = ahora;
   }
   
-  // Consultar comandos del servidor cada 5s
   if (wifiConectado && (ahora - ultimoPollingComandos >= POLLING_COMANDOS_INTERVALO)) {
     consultarComandos();
     ultimoPollingComandos = ahora;
   }
   
-  // Timeout de seguridad
   if ((motorActivo || bombaActiva) && (ahora - ultimoDatoRecibido > TIMEOUT_SIN_DATOS)) {
-    Serial.println("\n⚠️  TIMEOUT: Sin datos del EMISOR");
+    Serial.println("⚠️  TIMEOUT");
     controlarMotor(false);
     controlarBomba(false);
     datosDisponibles = false;
-    ultimoDatoRecibido = ahora;
   }
   
-  // Reconectar WiFi si se cae
   if (WiFi.status() != WL_CONNECTED && wifiConectado) {
-    Serial.println("\n⚠️  WiFi desconectado");
     wifiConectado = false;
     conectarWiFi();
   }

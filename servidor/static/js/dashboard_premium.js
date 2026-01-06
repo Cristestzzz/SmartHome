@@ -262,18 +262,43 @@ function actualizarActuadores(actuadores) {
     const servoAngulo = actuadores.servo_angulo || 90;
     document.getElementById('servoStatus').textContent = servoAngulo + '°';
     
-    // LEDs
+    // LEDs individuales
     const leds = actuadores.leds || {};
-    const ledsActivos = Object.values(leds).filter(v => v).length;
-    const totalLeds = 4;
     
-    const ledsStatus = document.getElementById('ledsStatus');
-    ledsStatus.textContent = `${ledsActivos}/${totalLeds}`;
+    // LED Cuarto 1
+    const ledCuarto1Status = document.getElementById('ledCuarto1Status');
+    if (ledCuarto1Status) {
+        if (leds.cuarto1) {
+            ledCuarto1Status.textContent = 'ON';
+            ledCuarto1Status.className = 'actuator-status active';
+        } else {
+            ledCuarto1Status.textContent = 'OFF';
+            ledCuarto1Status.className = 'actuator-status inactive';
+        }
+    }
     
-    if (ledsActivos > 0) {
-        ledsStatus.className = 'actuator-status active';
-    } else {
-        ledsStatus.className = 'actuator-status inactive';
+    // LED Cuarto 2
+    const ledCuarto2Status = document.getElementById('ledCuarto2Status');
+    if (ledCuarto2Status) {
+        if (leds.cuarto2) {
+            ledCuarto2Status.textContent = 'ON';
+            ledCuarto2Status.className = 'actuator-status active';
+        } else {
+            ledCuarto2Status.textContent = 'OFF';
+            ledCuarto2Status.className = 'actuator-status inactive';
+        }
+    }
+    
+    // LED Cuarto 3
+    const ledCuarto3Status = document.getElementById('ledCuarto3Status');
+    if (ledCuarto3Status) {
+        if (leds.cuarto3) {
+            ledCuarto3Status.textContent = 'ON';
+            ledCuarto3Status.className = 'actuator-status active';
+        } else {
+            ledCuarto3Status.textContent = 'OFF';
+            ledCuarto3Status.className = 'actuator-status inactive';
+        }
     }
 }
 
