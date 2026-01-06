@@ -36,7 +36,7 @@ uint8_t receiverMAC[] = {0xEC, 0x64, 0xC9, 0x91, 0xBD, 0x3C};
 // IMPORTANTE: Configurar el canal del WiFi del RECEPTOR
 // El RECEPTOR está en el canal del router WiFi
 // Cambia este número por el que veas en el RECEPTOR
-#define WIFI_CHANNEL 1  // ← CAMBIAR POR EL CANAL DEL RECEPTOR
+#define WIFI_CHANNEL 5  // ← CAMBIAR POR EL CANAL DEL RECEPTOR
 
 // Intervalo de envío
 #define ENVIO_INTERVALO 3000  // 3 segundos

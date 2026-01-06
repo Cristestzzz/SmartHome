@@ -1,14 +1,8 @@
 /*
  * ========================================
- * ESP32 RECEPTOR - CON 5 LEDs
+ * ESP32 RECEPTOR - 3 LEDs
  * ========================================
- * Compatible con ESP32 core v2.x y v3.x
- * Compatible con ArduinoJson v7.x
- * 
- * Incluye:
- * - 5 LEDs controlables desde web
- * - Control manual/automático
- * - Configuración dinámica
+ * LEDs en GPIO 33, 12, 14
  */
 
 #include <esp_now.h>
@@ -18,24 +12,22 @@
 
 // ==================== CONFIGURACIÓN ====================
 
-// WiFi - CAMBIAR ESTOS VALORES
-const char* WIFI_SSID = "GAUTAMA";
-const char* WIFI_PASSWORD = "gautama2024";
+const char* WIFI_SSID = "RANZA";
+const char* WIFI_PASSWORD = "23855951";
 
-// URLs del servidor - CAMBIAR LA IP
-const char* SERVER_URL_DATOS = "http://192.168.0.5:5000/api/datos/datos";
-const char* SERVER_URL_COMANDOS = "http://192.168.0.5:5000/api/comandos";
+const char* SERVER_URL_DATOS = "http://192.168.0.114:5000/api/datos/datos";
+const char* SERVER_URL_COMANDOS = "http://192.168.0.114:5000/api/comandos";
 
 // Pines
-#define MOTOR_PIN 27      // Ventilador
-#define BOMBA_PIN 26      // Bomba de agua
+#define MOTOR_PIN 27
+#define BOMBA_PIN 26
 
-// LEDs - 3 LEDs controlables
+// LEDs - 3 LEDs
 #define LED_CUARTO1 33
 #define LED_CUARTO2 12
 #define LED_CUARTO3 14
 
-// Umbrales automáticos
+// Umbrales
 float TEMP_ACTIVACION = 30.0;
 float TEMP_DESACTIVACION = 28.0;
 int HUMEDAD_SUELO_SECO = 30;
@@ -57,18 +49,16 @@ typedef struct struct_message {
 
 struct_message datosRecibidos;
 
-// Estado del sistema
 String modoActual = "automatico";
 bool motorActivo = false;
 bool bombaActiva = false;
 int servoAngulo = 90;
 
-// Estado de LEDs
+// Estado de 3 LEDs
 bool ledCuarto1 = false;
 bool ledCuarto2 = false;
 bool ledCuarto3 = false;
 
-// Control de tiempo
 unsigned long ultimoDatoRecibido = 0;
 unsigned long ultimoEnvioServidor = 0;
 unsigned long ultimoPollingComandos = 0;
@@ -79,10 +69,7 @@ bool datosDisponibles = false;
 // ==================== FUNCIONES ====================
 
 void conectarWiFi() {
-  Serial.println("\n📡 Conectando a WiFi...");
-  Serial.print("SSID: ");
-  Serial.println(WIFI_SSID);
-  
+  Serial.println("WiFi conectando...");
   WiFi.mode(WIFI_AP_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   
@@ -95,40 +82,36 @@ void conectarWiFi() {
   
   if (WiFi.status() == WL_CONNECTED) {
     wifiConectado = true;
-    Serial.println("\n✓ WiFi conectado exitosamente");
-    Serial.print("IP asignada: ");
+    Serial.println("\nWiFi OK");
+    Serial.print("IP: ");
     Serial.println(WiFi.localIP());
-    Serial.print("⚠️  CANAL WiFi: ");
+    Serial.print("Canal: ");
     Serial.println(WiFi.channel());
   } else {
     wifiConectado = false;
-    Serial.println("\n✗ WiFi NO conectado");
+    Serial.println("\nWiFi FAIL");
   }
 }
 
 void controlarMotor(bool activar) {
   if (activar == motorActivo) return;
-  
   digitalWrite(MOTOR_PIN, activar ? HIGH : LOW);
   motorActivo = activar;
-  Serial.println(activar ? "🌀 MOTOR ENCENDIDO" : "⏹️  MOTOR APAGADO");
+  Serial.println(activar ? "MOTOR ON" : "MOTOR OFF");
 }
 
 void controlarBomba(bool activar) {
   if (activar == bombaActiva) return;
-  
   digitalWrite(BOMBA_PIN, activar ? HIGH : LOW);
   bombaActiva = activar;
-  Serial.println(activar ? "💧 BOMBA ENCENDIDA" : "🚫 BOMBA APAGADA");
+  Serial.println(activar ? "BOMBA ON" : "BOMBA OFF");
 }
 
 void controlarLED(int pin, bool &estado, bool activar, const char* nombre) {
   if (activar == estado) return;
-  
   digitalWrite(pin, activar ? HIGH : LOW);
   estado = activar;
-  
-  Serial.print("💡 LED ");
+  Serial.print("LED ");
   Serial.print(nombre);
   Serial.println(activar ? " ON" : " OFF");
 }
@@ -136,10 +119,17 @@ void controlarLED(int pin, bool &estado, bool activar, const char* nombre) {
 void enviarDatosServidor() {
   if (!wifiConectado || !datosDisponibles) return;
   
+  Serial.println("Enviando al servidor...");
+  
   HTTPClient http;
-  http.begin(SERVER_URL_DATOS);
+  
+  if (!http.begin(SERVER_URL_DATOS)) {
+    Serial.println("Error: No se pudo iniciar HTTP");
+    return;
+  }
+  
   http.addHeader("Content-Type", "application/json");
-  http.setTimeout(5000);
+  http.setTimeout(2000);
   
   JsonDocument doc;
   
@@ -163,28 +153,38 @@ void enviarDatosServidor() {
   String json;
   serializeJson(doc, json);
   
+  yield();
+  
   int httpCode = http.POST(json);
   
   if (httpCode == 200) {
-    Serial.println("✓ Datos enviados");
+    Serial.println("Datos enviados OK");
   } else if (httpCode > 0) {
-    Serial.print("⚠️  HTTP ");
+    Serial.print("HTTP ");
     Serial.println(httpCode);
   } else {
-    Serial.println("✗ Error conexión servidor");
+    Serial.print("Error conexion: ");
+    Serial.println(http.errorToString(httpCode));
   }
   
   http.end();
+  yield();
 }
 
 void consultarComandos() {
   if (!wifiConectado) return;
   
   HTTPClient http;
-  http.begin(SERVER_URL_COMANDOS);
-  http.setTimeout(3000);
   
+  if (!http.begin(SERVER_URL_COMANDOS)) {
+    return;
+  }
+  
+  http.setTimeout(2000);
+  
+  yield();
   int httpCode = http.GET();
+  yield();
   
   if (httpCode == 200) {
     String payload = http.getString();
@@ -196,10 +196,10 @@ void consultarComandos() {
       
       // Obtener modo
       if (doc.containsKey("modo")) {
-        String nuevoModo = doc["modo"].as<String>();
-        if (nuevoModo != modoActual) {
-          modoActual = nuevoModo;
-          Serial.print("🔄 Modo: ");
+        const char* nuevoModo = doc["modo"];
+        if (nuevoModo && strcmp(nuevoModo, modoActual.c_str()) != 0) {
+          modoActual = String(nuevoModo);
+          Serial.print("Modo: ");
           Serial.println(modoActual);
         }
       }
@@ -210,7 +210,7 @@ void consultarComandos() {
         bool cambio = false;
         
         if (config.containsKey("temp_activacion")) {
-          float val = config["temp_activacion"].as<float>();
+          float val = config["temp_activacion"];
           if (val != TEMP_ACTIVACION) {
             TEMP_ACTIVACION = val;
             cambio = true;
@@ -218,7 +218,7 @@ void consultarComandos() {
         }
         
         if (config.containsKey("temp_desactivacion")) {
-          float val = config["temp_desactivacion"].as<float>();
+          float val = config["temp_desactivacion"];
           if (val != TEMP_DESACTIVACION) {
             TEMP_DESACTIVACION = val;
             cambio = true;
@@ -226,7 +226,7 @@ void consultarComandos() {
         }
         
         if (config.containsKey("humedad_suelo_seco")) {
-          int val = config["humedad_suelo_seco"].as<int>();
+          int val = config["humedad_suelo_seco"];
           if (val != HUMEDAD_SUELO_SECO) {
             HUMEDAD_SUELO_SECO = val;
             cambio = true;
@@ -234,7 +234,7 @@ void consultarComandos() {
         }
         
         if (config.containsKey("humedad_suelo_humedo")) {
-          int val = config["humedad_suelo_humedo"].as<int>();
+          int val = config["humedad_suelo_humedo"];
           if (val != HUMEDAD_SUELO_HUMEDO) {
             HUMEDAD_SUELO_HUMEDO = val;
             cambio = true;
@@ -242,17 +242,7 @@ void consultarComandos() {
         }
         
         if (cambio) {
-          Serial.println("\n⚙️  CONFIG ACTUALIZADA:");
-          Serial.print("   Temp: ");
-          Serial.print(TEMP_ACTIVACION);
-          Serial.print("°C / ");
-          Serial.print(TEMP_DESACTIVACION);
-          Serial.println("°C");
-          Serial.print("   Suelo: ");
-          Serial.print(HUMEDAD_SUELO_SECO);
-          Serial.print("% / ");
-          Serial.print(HUMEDAD_SUELO_HUMEDO);
-          Serial.println("%\n");
+          Serial.println("CONFIG ACTUALIZADA");
         }
       }
       
@@ -261,19 +251,19 @@ void consultarComandos() {
         JsonObject comandos = doc["comandos"].as<JsonObject>();
         
         if (comandos.containsKey("ventilador")) {
-          controlarMotor(comandos["ventilador"].as<bool>());
+          controlarMotor(comandos["ventilador"]);
         }
         
         if (comandos.containsKey("bomba")) {
-          controlarBomba(comandos["bomba"].as<bool>());
+          controlarBomba(comandos["bomba"]);
         }
         
         if (comandos.containsKey("servo")) {
-          servoAngulo = comandos["servo"].as<int>();
+          servoAngulo = comandos["servo"];
         }
       }
       
-      // LEDs SIEMPRE controlables (independiente del modo)
+      // LEDs SIEMPRE (independiente del modo)
       if (doc.containsKey("comandos")) {
         JsonObject comandos = doc["comandos"].as<JsonObject>();
         
@@ -281,13 +271,13 @@ void consultarComandos() {
           JsonObject leds = comandos["leds"].as<JsonObject>();
           
           if (leds.containsKey("cuarto1")) {
-            controlarLED(LED_CUARTO1, ledCuarto1, leds["cuarto1"].as<bool>(), "Cuarto1");
+            controlarLED(LED_CUARTO1, ledCuarto1, leds["cuarto1"], "Cuarto1");
           }
           if (leds.containsKey("cuarto2")) {
-            controlarLED(LED_CUARTO2, ledCuarto2, leds["cuarto2"].as<bool>(), "Cuarto2");
+            controlarLED(LED_CUARTO2, ledCuarto2, leds["cuarto2"], "Cuarto2");
           }
           if (leds.containsKey("cuarto3")) {
-            controlarLED(LED_CUARTO3, ledCuarto3, leds["cuarto3"].as<bool>(), "Cuarto3");
+            controlarLED(LED_CUARTO3, ledCuarto3, leds["cuarto3"], "Cuarto3");
           }
         }
       }
@@ -295,21 +285,41 @@ void consultarComandos() {
   }
   
   http.end();
+  yield();
 }
 
 void controlAutomatico() {
   if (!datosDisponibles) return;
   
+  bool cambioMotor = false;
+  bool cambioBomba = false;
+  
+  // Control ventilador por temperatura
   if (datosRecibidos.temperatura >= TEMP_ACTIVACION) {
+    if (!motorActivo) cambioMotor = true;
     controlarMotor(true);
   } else if (datosRecibidos.temperatura <= TEMP_DESACTIVACION) {
+    if (motorActivo) cambioMotor = true;
     controlarMotor(false);
   }
   
+  if (cambioMotor) {
+    delay(100);
+    yield();
+  }
+  
+  // Control bomba por humedad del suelo
   if (datosRecibidos.humedad_suelo < HUMEDAD_SUELO_SECO) {
+    if (!bombaActiva) cambioBomba = true;
     controlarBomba(true);
   } else if (datosRecibidos.humedad_suelo > HUMEDAD_SUELO_HUMEDO) {
+    if (bombaActiva) cambioBomba = true;
     controlarBomba(false);
+  }
+  
+  if (cambioBomba) {
+    delay(100);
+    yield();
   }
 }
 
@@ -323,11 +333,11 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len) {
   datosDisponibles = true;
   ultimoDatoRecibido = millis();
   
-  Serial.print("📊 ");
+  Serial.print("T:");
   Serial.print(datosRecibidos.temperatura, 1);
-  Serial.print("°C | ");
+  Serial.print("C H:");
   Serial.print(datosRecibidos.humedad, 1);
-  Serial.print("% | S:");
+  Serial.print("% S:");
   Serial.print(datosRecibidos.humedad_suelo);
   Serial.println("%");
   
@@ -340,7 +350,7 @@ void setup() {
   Serial.begin(115200);
   delay(2000);
   
-  Serial.println("\n==== ESP32 RECEPTOR - 5 LEDs ====");
+  Serial.println("\n=== ESP32 RECEPTOR - 3 LEDs ===");
   
   // Pines actuadores
   pinMode(MOTOR_PIN, OUTPUT);
@@ -356,21 +366,24 @@ void setup() {
   digitalWrite(LED_CUARTO2, LOW);
   digitalWrite(LED_CUARTO3, LOW);
   
-  Serial.println("✓ Actuadores y LEDs inicializados");
+  Serial.println("Pines OK");
+  Serial.println("LEDs: GPIO 33, 12, 14");
   
   conectarWiFi();
   
-  Serial.print("Mi MAC: ");
+  Serial.print("MAC: ");
   Serial.println(WiFi.macAddress());
   
   if (esp_now_init() != ESP_OK) {
-    Serial.println("✗ Error ESP-NOW");
+    Serial.println("ESP-NOW FAIL");
     while(1);
   }
   
   esp_now_register_recv_cb(OnDataRecv);
   
-  Serial.println("✓ Sistema listo\n");
+  Serial.println("Sistema listo");
+  Serial.print("Modo: ");
+  Serial.println(modoActual);
   
   ultimoDatoRecibido = millis();
   ultimoEnvioServidor = millis();
@@ -380,6 +393,8 @@ void setup() {
 void loop() {
   unsigned long ahora = millis();
   
+  yield();
+  
   if (wifiConectado && (ahora - ultimoEnvioServidor >= ENVIO_SERVIDOR_INTERVALO)) {
     if (datosDisponibles) {
       enviarDatosServidor();
@@ -387,22 +402,28 @@ void loop() {
     ultimoEnvioServidor = ahora;
   }
   
+  yield();
+  
   if (wifiConectado && (ahora - ultimoPollingComandos >= POLLING_COMANDOS_INTERVALO)) {
     consultarComandos();
     ultimoPollingComandos = ahora;
   }
   
+  yield();
+  
   if ((motorActivo || bombaActiva) && (ahora - ultimoDatoRecibido > TIMEOUT_SIN_DATOS)) {
-    Serial.println("⚠️  TIMEOUT");
+    Serial.println("TIMEOUT");
     controlarMotor(false);
     controlarBomba(false);
     datosDisponibles = false;
   }
+  
+  yield();
   
   if (WiFi.status() != WL_CONNECTED && wifiConectado) {
     wifiConectado = false;
     conectarWiFi();
   }
   
-  delay(100);
+  delay(250);
 }
