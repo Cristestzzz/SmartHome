@@ -1,9 +1,14 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎮 Control - Casa Domótica</title>
+    <!-- Cache Control: Prevenir caché del navegador -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <link rel="stylesheet" href="/static/css/styles_premium.css">
     <style>
         .control-card {
@@ -13,13 +18,13 @@
             padding: 1.5rem;
             margin-bottom: 1.5rem;
         }
-        
+
         .mode-selector {
             display: flex;
             gap: 1rem;
             margin-bottom: 2rem;
         }
-        
+
         .mode-button {
             flex: 1;
             padding: 1rem;
@@ -30,31 +35,31 @@
             transition: all 0.3s ease;
             text-align: center;
         }
-        
+
         .mode-button.active {
             border-color: var(--accent-primary);
             background: rgba(139, 92, 246, 0.1);
         }
-        
+
         .mode-button:hover:not(.active) {
             border-color: var(--border-light);
         }
-        
+
         .mode-icon {
             font-size: 2rem;
             margin-bottom: 0.5rem;
         }
-        
+
         .mode-title {
             font-weight: 600;
             margin-bottom: 0.25rem;
         }
-        
+
         .mode-desc {
             font-size: 0.75rem;
             color: var(--text-muted);
         }
-        
+
         .toggle-switch {
             position: relative;
             width: 60px;
@@ -65,11 +70,11 @@
             transition: all 0.3s ease;
             border: 1px solid var(--border-color);
         }
-        
+
         .toggle-switch.active {
             background: var(--accent-primary);
         }
-        
+
         .toggle-switch::after {
             content: '';
             position: absolute;
@@ -81,11 +86,11 @@
             border-radius: 50%;
             transition: all 0.3s ease;
         }
-        
+
         .toggle-switch.active::after {
             left: 33px;
         }
-        
+
         .control-item {
             display: flex;
             justify-content: space-between;
@@ -95,21 +100,21 @@
             border-radius: 12px;
             margin-bottom: 1rem;
         }
-        
+
         .control-info {
             flex: 1;
         }
-        
+
         .control-name {
             font-weight: 600;
             margin-bottom: 0.25rem;
         }
-        
+
         .control-status {
             font-size: 0.875rem;
             color: var(--text-muted);
         }
-        
+
         .slider {
             width: 200px;
             height: 6px;
@@ -118,7 +123,7 @@
             outline: none;
             -webkit-appearance: none;
         }
-        
+
         .slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             width: 20px;
@@ -127,7 +132,7 @@
             background: var(--accent-primary);
             cursor: pointer;
         }
-        
+
         .slider::-moz-range-thumb {
             width: 20px;
             height: 20px;
@@ -136,18 +141,18 @@
             cursor: pointer;
             border: none;
         }
-        
+
         .config-group {
             margin-bottom: 1.5rem;
         }
-        
+
         .config-label {
             font-size: 0.875rem;
             color: var(--text-secondary);
             margin-bottom: 0.5rem;
             display: block;
         }
-        
+
         .config-input {
             width: 100%;
             padding: 0.75rem;
@@ -157,12 +162,12 @@
             color: var(--text-primary);
             font-size: 1rem;
         }
-        
+
         .config-input:focus {
             outline: none;
             border-color: var(--accent-primary);
         }
-        
+
         .btn-save {
             padding: 0.75rem 1.5rem;
             background: var(--gradient-primary);
@@ -173,28 +178,28 @@
             cursor: pointer;
             transition: all 0.3s ease;
         }
-        
+
         .btn-save:hover {
             transform: translateY(-2px);
             box-shadow: var(--shadow-glow);
         }
-        
+
         .alert {
             padding: 1rem;
             border-radius: 8px;
             margin-bottom: 1rem;
         }
-        
+
         .alert-warning {
             background: rgba(245, 158, 11, 0.1);
             border: 1px solid rgba(245, 158, 11, 0.3);
             color: var(--accent-warning);
         }
-        
+
         .disabled-overlay {
             position: relative;
         }
-        
+
         .disabled-overlay::after {
             content: '';
             position: absolute;
@@ -208,19 +213,20 @@
             opacity: 0;
             transition: opacity 0.3s ease;
         }
-        
+
         .disabled-overlay.disabled::after {
             opacity: 1;
         }
-        
+
         .disabled-overlay.disabled * {
             pointer-events: none !important;
         }
     </style>
 </head>
+
 <body>
     <div class="app-container">
-        
+
         <!-- SIDEBAR -->
         <aside class="sidebar">
             <div class="sidebar-header">
@@ -229,7 +235,7 @@
                     <span class="logo-text">SmartHome</span>
                 </div>
             </div>
-            
+
             <nav class="sidebar-nav">
                 <div class="nav-section">
                     <a href="/" class="nav-item">
@@ -245,7 +251,7 @@
                         <span>Historial</span>
                     </a>
                 </div>
-                
+
                 <div class="nav-section">
                     <div class="nav-label">Configuración</div>
                     <a href="#" class="nav-item">
@@ -258,7 +264,7 @@
                     </a>
                 </div>
             </nav>
-            
+
             <div class="sidebar-footer">
                 <div class="help-card">
                     <div class="help-title">¿Necesitas ayuda?</div>
@@ -267,7 +273,7 @@
                 </div>
             </div>
         </aside>
-        
+
         <!-- CONTENIDO PRINCIPAL -->
         <main class="main-content">
             <header class="topbar">
@@ -276,9 +282,9 @@
                     <p class="topbar-subtitle">Administra tus dispositivos manualmente o automáticamente</p>
                 </div>
             </header>
-            
+
             <div class="content">
-                
+
                 <!-- SELECTOR DE MODO -->
                 <div class="control-card">
                     <h2 style="margin-bottom: 1rem;">Modo de Operación</h2>
@@ -295,15 +301,15 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- CONTROLES MANUALES (Ventilador, Bomba, Servo) -->
                 <div class="control-card disabled-overlay" id="controlesCard">
                     <h2 style="margin-bottom: 1rem;">Controles Manuales</h2>
-                    
+
                     <div class="alert alert-warning" id="alertManual" style="display: none;">
                         ⚠️ Cambia a modo <strong>Manual</strong> para habilitar los controles
                     </div>
-                    
+
                     <!-- VENTILADOR -->
                     <div class="control-item">
                         <div class="control-info">
@@ -312,7 +318,7 @@
                         </div>
                         <div class="toggle-switch" id="toggleVentilador" onclick="toggleVentilador()"></div>
                     </div>
-                    
+
                     <!-- BOMBA -->
                     <div class="control-item">
                         <div class="control-info">
@@ -321,24 +327,25 @@
                         </div>
                         <div class="toggle-switch" id="toggleBomba" onclick="toggleBomba()"></div>
                     </div>
-                    
+
                     <!-- SERVOMOTOR -->
                     <div class="control-item">
                         <div class="control-info">
                             <div class="control-name">🔄 Servomotor</div>
                             <div class="control-status" id="statusServo">90°</div>
                         </div>
-                        <input type="range" min="0" max="180" value="90" class="slider" id="sliderServo" oninput="cambiarServo(this.value)">
+                        <input type="range" min="0" max="180" value="90" class="slider" id="sliderServo"
+                            oninput="cambiarServo(this.value)">
                     </div>
                 </div>
-                
+
                 <!-- CONTROL DE LEDs (SIEMPRE DISPONIBLE) -->
                 <div class="control-card">
                     <h2 style="margin-bottom: 0.5rem;">💡 Control de Iluminación</h2>
                     <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1.5rem;">
                         Los LEDs se pueden controlar en cualquier momento
                     </p>
-                    
+
                     <!-- LED CUARTO 1 -->
                     <div class="control-item">
                         <div class="control-info">
@@ -347,7 +354,7 @@
                         </div>
                         <div class="toggle-switch" id="toggleLedCuarto1" onclick="toggleLED('cuarto1')"></div>
                     </div>
-                    
+
                     <!-- LED CUARTO 2 -->
                     <div class="control-item">
                         <div class="control-info">
@@ -356,7 +363,7 @@
                         </div>
                         <div class="toggle-switch" id="toggleLedCuarto2" onclick="toggleLED('cuarto2')"></div>
                     </div>
-                    
+
                     <!-- LED CUARTO 3 -->
                     <div class="control-item">
                         <div class="control-info">
@@ -366,14 +373,14 @@
                         <div class="toggle-switch" id="toggleLedCuarto3" onclick="toggleLED('cuarto3')"></div>
                     </div>
                 </div>
-                
+
                 <!-- CONFIGURACIÓN DE UMBRALES -->
                 <div class="control-card">
                     <h2 style="margin-bottom: 1rem;">Configuración de Umbrales Automáticos</h2>
                     <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1.5rem;">
                         Estos valores se aplican cuando el sistema está en modo automático
                     </p>
-                    
+
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
                         <div>
                             <div class="config-group">
@@ -382,7 +389,8 @@
                             </div>
                             <div class="config-group">
                                 <label class="config-label">❄️ Temperatura desactivación ventilador (°C)</label>
-                                <input type="number" class="config-input" id="tempDesactivacion" value="28.0" step="0.5">
+                                <input type="number" class="config-input" id="tempDesactivacion" value="28.0"
+                                    step="0.5">
                             </div>
                         </div>
                         <div>
@@ -392,37 +400,76 @@
                             </div>
                             <div class="config-group">
                                 <label class="config-label">💦 Humedad suelo HÚMEDO - desactivar bomba (%)</label>
-                                <input type="number" class="config-input" id="humedadHumedo" value="70" min="0" max="100">
+                                <input type="number" class="config-input" id="humedadHumedo" value="70" min="0"
+                                    max="100">
                             </div>
                         </div>
                     </div>
-                    
+
                     <button class="btn-save" onclick="guardarConfiguracion()">💾 Guardar Configuración</button>
                 </div>
-                
+
             </div>
         </main>
     </div>
-    
+
     <script>
         let modoActual = 'automatico';
         let estadoVentilador = false;
         let estadoBomba = false;
         let anguloServo = 90;
-        
+
         // Estados de LEDs
         let estadoLEDs = {
             cuarto1: false,
             cuarto2: false,
             cuarto3: false
         };
-        
+
         // Cargar modo actual al iniciar
-        window.addEventListener('DOMContentLoaded', async function() {
+        window.addEventListener('DOMContentLoaded', async function () {
             await cargarModo();
             await cargarConfiguracion();
+            await cargarEstadoActual();  // ← NUEVO: Cargar estado de dispositivos
         });
-        
+
+        async function cargarEstadoActual() {
+            try {
+                const timestamp = new Date().getTime();
+                const response = await fetch(`/api/ultimo-estado?_t=${timestamp}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const actuadores = data.actuadores || {};
+
+                    console.log('📥 Cargando estado inicial:', actuadores);
+
+                    // Actualizar ventilador
+                    estadoVentilador = (actuadores.ventilador_velocidad || 0) > 0;
+                    actualizarUIVentilador();
+
+                    // Actualizar bomba
+                    estadoBomba = actuadores.bomba_activa || false;
+                    actualizarUIBomba();
+
+                    // Actualizar servo
+                    anguloServo = actuadores.servo_angulo || 90;
+                    document.getElementById('sliderServo').value = anguloServo;
+                    document.getElementById('statusServo').textContent = anguloServo + '°';
+
+                    // Actualizar LEDs
+                    const leds = actuadores.leds || {};
+                    for (let nombre in estadoLEDs) {
+                        estadoLEDs[nombre] = leds[nombre] || false;
+                        actualizarUILED(nombre);
+                    }
+
+                    console.log('✓ Estado inicial cargado correctamente');
+                }
+            } catch (error) {
+                console.error('Error al cargar estado inicial:', error);
+            }
+        }
+
         async function cargarModo() {
             try {
                 const response = await fetch('/api/sistema/modo');
@@ -435,7 +482,7 @@
                 console.error('Error al cargar modo:', error);
             }
         }
-        
+
         async function cambiarModo(nuevoModo) {
             try {
                 const response = await fetch('/api/sistema/modo', {
@@ -443,7 +490,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ modo: nuevoModo })
                 });
-                
+
                 if (response.ok) {
                     modoActual = nuevoModo;
                     actualizarUIMode();
@@ -454,13 +501,13 @@
                 alert('Error al cambiar modo');
             }
         }
-        
+
         function actualizarUIMode() {
             const btnAuto = document.getElementById('modeAuto');
             const btnManual = document.getElementById('modeManual');
             const controlesCard = document.getElementById('controlesCard');
             const alertManual = document.getElementById('alertManual');
-            
+
             if (modoActual === 'automatico') {
                 btnAuto.classList.add('active');
                 btnManual.classList.remove('active');
@@ -473,19 +520,19 @@
                 alertManual.style.display = 'none';
             }
         }
-        
+
         async function toggleVentilador() {
             if (modoActual !== 'manual') return;
-            
+
             estadoVentilador = !estadoVentilador;
-            
+
             try {
                 const response = await fetch('/api/control/ventilador', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ estado: estadoVentilador })
                 });
-                
+
                 if (response.ok) {
                     actualizarUIVentilador();
                 }
@@ -494,11 +541,11 @@
                 estadoVentilador = !estadoVentilador;
             }
         }
-        
+
         function actualizarUIVentilador() {
             const toggle = document.getElementById('toggleVentilador');
             const status = document.getElementById('statusVentilador');
-            
+
             if (estadoVentilador) {
                 toggle.classList.add('active');
                 status.textContent = 'Encendido';
@@ -509,19 +556,19 @@
                 status.style.color = 'var(--text-muted)';
             }
         }
-        
+
         async function toggleBomba() {
             if (modoActual !== 'manual') return;
-            
+
             estadoBomba = !estadoBomba;
-            
+
             try {
                 const response = await fetch('/api/control/bomba', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ estado: estadoBomba })
                 });
-                
+
                 if (response.ok) {
                     actualizarUIBomba();
                 }
@@ -530,11 +577,11 @@
                 estadoBomba = !estadoBomba;
             }
         }
-        
+
         function actualizarUIBomba() {
             const toggle = document.getElementById('toggleBomba');
             const status = document.getElementById('statusBomba');
-            
+
             if (estadoBomba) {
                 toggle.classList.add('active');
                 status.textContent = 'Encendida - Regando';
@@ -545,13 +592,13 @@
                 status.style.color = 'var(--text-muted)';
             }
         }
-        
+
         async function cambiarServo(valor) {
             if (modoActual !== 'manual') return;
-            
+
             anguloServo = parseInt(valor);
             document.getElementById('statusServo').textContent = anguloServo + '°';
-            
+
             try {
                 await fetch('/api/control/servo', {
                     method: 'POST',
@@ -562,7 +609,7 @@
                 console.error('Error:', error);
             }
         }
-        
+
         async function cargarConfiguracion() {
             try {
                 const response = await fetch('/api/configuracion');
@@ -577,7 +624,7 @@
                 console.error('Error al cargar configuración:', error);
             }
         }
-        
+
         async function guardarConfiguracion() {
             const config = {
                 temp_activacion: parseFloat(document.getElementById('tempActivacion').value),
@@ -585,14 +632,14 @@
                 humedad_suelo_seco: parseInt(document.getElementById('humedadSeco').value),
                 humedad_suelo_humedo: parseInt(document.getElementById('humedadHumedo').value)
             };
-            
+
             try {
                 const response = await fetch('/api/configuracion', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(config)
                 });
-                
+
                 if (response.ok) {
                     alert('✓ Configuración guardada correctamente');
                 }
@@ -601,16 +648,16 @@
                 alert('✗ Error al guardar configuración');
             }
         }
-        
+
         // ========== FUNCIONES LEDs ==========
         async function toggleLED(nombre) {
             estadoLEDs[nombre] = !estadoLEDs[nombre];
-            
+
             try {
                 await fetch('/api/control/led', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
+                    body: JSON.stringify({
                         nombre: nombre,
                         estado: estadoLEDs[nombre]
                     })
@@ -621,20 +668,20 @@
                 estadoLEDs[nombre] = !estadoLEDs[nombre];
             }
         }
-        
+
         function actualizarUILED(nombre) {
             const nombreCapital = nombre.charAt(0).toUpperCase() + nombre.slice(1);
             const toggle = document.getElementById('toggleLed' + nombreCapital);
             const status = document.getElementById('statusLed' + nombreCapital);
-            
+
             console.log('Actualizando LED:', nombre, 'Estado:', estadoLEDs[nombre]);
             console.log('Toggle ID:', 'toggleLed' + nombreCapital, 'Elemento:', toggle);
-            
+
             if (!toggle || !status) {
                 console.error('No se encontraron elementos para LED:', nombre);
                 return;
             }
-            
+
             if (estadoLEDs[nombre]) {
                 toggle.classList.add('active');
                 status.textContent = 'Encendido';
@@ -647,4 +694,5 @@
         }
     </script>
 </body>
+
 </html>

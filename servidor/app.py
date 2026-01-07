@@ -35,6 +35,41 @@ sistema_estado = {
     }
 }
 
+# ====================== HELPER FUNCTIONS ======================
+
+def actualizar_estado_actuador_inmediato(**kwargs):
+    """
+    Actualiza el estado de actuadores en BD inmediatamente
+    Esto asegura que el estado persista al refrescar la página
+    """
+    try:
+        # Obtener estado actual o usar valores por defecto
+        ultimo = db.obtener_ultimo_estado_actuadores() or {}
+        
+        # Actualizar con nuevos valores (mantener los existentes si no se especifican)
+        servo_angulo = kwargs.get('servo_angulo', ultimo.get('servo_angulo', 90))
+        ventilador_velocidad = kwargs.get('ventilador_velocidad', ultimo.get('ventilador_velocidad', 0))
+        bomba_activa = kwargs.get('bomba_activa', ultimo.get('bomba_activa', False))
+        leds = kwargs.get('leds', ultimo.get('leds', {}))
+        
+        # Asegurar que leds sea un dict
+        if isinstance(leds, str):
+            leds = json.loads(leds)
+        
+        # Insertar en base de datos
+        db.insertar_estado_actuadores(
+            servo_angulo=servo_angulo,
+            ventilador_velocidad=ventilador_velocidad,
+            bomba_activa=bomba_activa,
+            leds=json.dumps(leds)
+        )
+        
+        print(f"✓ Estado persistido en BD: servo={servo_angulo}°, ventilador={ventilador_velocidad}, bomba={bomba_activa}, leds={leds}")
+        
+    except Exception as e:
+        print(f"✗ Error al persistir estado: {e}")
+
+
 # ====================== RUTAS WEB ======================
 
 @app.route('/')
@@ -220,6 +255,9 @@ def controlar_ventilador():
         sistema_estado['comandos_pendientes']['ventilador'] = estado
         print(f"🌀 Comando ventilador: {'ON' if estado else 'OFF'}")
         
+        # Persistir estado inmediatamente en BD
+        actualizar_estado_actuador_inmediato(ventilador_velocidad=100 if estado else 0)
+        
         return jsonify({
             "status": "success",
             "ventilador": estado
@@ -240,6 +278,9 @@ def controlar_bomba():
         
         sistema_estado['comandos_pendientes']['bomba'] = estado
         print(f"💧 Comando bomba: {'ON' if estado else 'OFF'}")
+        
+        # Persistir estado inmediatamente en BD
+        actualizar_estado_actuador_inmediato(bomba_activa=estado)
         
         return jsonify({
             "status": "success",
@@ -264,6 +305,9 @@ def controlar_servo():
         
         sistema_estado['comandos_pendientes']['servo'] = angulo
         print(f"🔄 Comando servo: {angulo}°")
+        
+        # Persistir estado inmediatamente en BD
+        actualizar_estado_actuador_inmediato(servo_angulo=angulo)
         
         return jsonify({
             "status": "success",
@@ -290,6 +334,15 @@ def controlar_led():
         
         sistema_estado['comandos_pendientes']['leds'][nombre] = estado
         print(f"💡 Comando LED {nombre}: {'ON' if estado else 'OFF'}")
+        
+        # Persistir estado inmediatamente en BD
+        # Obtener LEDs actuales y actualizar el específico
+        ultimo = db.obtener_ultimo_estado_actuadores() or {}
+        leds_actuales = ultimo.get('leds', {})
+        if isinstance(leds_actuales, str):
+            leds_actuales = json.loads(leds_actuales)
+        leds_actuales[nombre] = estado
+        actualizar_estado_actuador_inmediato(leds=leds_actuales)
         
         return jsonify({
             "status": "success",
