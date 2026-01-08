@@ -122,22 +122,32 @@ function actualizarMetricas(data) {
 }
 
 function actualizarUltimaActualizacion() {
-    const elem = document.querySelector('.last-update');
+    const elem = document.getElementById('ultimaActualizacion');
     if (elem) {
-        elem.textContent = `Última actualización: ${new Date().toLocaleTimeString('es-PE')}`;
+        elem.textContent = new Date().toLocaleTimeString('es-PE');
     }
 }
 
 function actualizarEstadoConexion(conectado) {
-    const elem = document.querySelector('.connection-status');
-    if (elem) {
-        elem.innerHTML = conectado
-            ? '<span style="color: var(--accent-success);">● Conectado</span>'
-            : '<span style="color: var(--accent-danger);">● Desconectado</span>';
+    const statusText = document.getElementById('statusText');
+    const statusDot = document.getElementById('statusDot');
+
+    if (statusText && statusDot) {
+        if (conectado) {
+            statusText.textContent = 'Conectado';
+            statusText.style.color = 'var(--accent-success)';
+            statusDot.style.background = 'var(--accent-success)';
+            statusDot.style.boxShadow = '0 0 8px var(--accent-success)';
+        } else {
+            statusText.textContent = 'Desconectado';
+            statusText.style.color = 'var(--accent-danger)';
+            statusDot.style.background = 'var(--accent-danger)';
+            statusDot.style.boxShadow = 'none';
+        }
     }
 }
 
-let chartTemp, chartHumedad, chartSuelo;
+let chartTempHum, chartSuelo;
 
 function actualizarGraficas(historial) {
     if (!historial || historial.length === 0) return;
@@ -150,56 +160,76 @@ function actualizarGraficas(historial) {
     const hums = datos.map(d => d.humedad);
     const suelo = datos.map(d => d.humedad_suelo);
 
-    const ctxTemp = document.getElementById('chartTemperatura');
-    if (ctxTemp) {
-        if (chartTemp) chartTemp.destroy();
-        chartTemp = new Chart(ctxTemp, {
+    // Gráfica combinada de Temperatura y Humedad
+    const ctxTempHum = document.getElementById('chartTempHum');
+    if (ctxTempHum) {
+        if (chartTempHum) chartTempHum.destroy();
+        chartTempHum = new Chart(ctxTempHum, {
             type: 'line',
             data: {
                 labels,
-                datasets: [{
-                    label: 'Temperatura (°C)',
-                    data: temps,
-                    borderColor: 'rgb(239, 68, 68)',
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
+                datasets: [
+                    {
+                        label: 'Temperatura (°C)',
+                        data: temps,
+                        borderColor: 'rgb(239, 68, 68)',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Humedad (%)',
+                        data: hums,
+                        borderColor: 'rgb(6, 182, 212)',
+                        backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        yAxisID: 'y1'
+                    }
+                ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: false } }
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Temperatura (°C)'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Humedad (%)'
+                        },
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    }
+                }
             }
         });
     }
 
-    const ctxHum = document.getElementById('chartHumedad');
-    if (ctxHum) {
-        if (chartHumedad) chartHumedad.destroy();
-        chartHumedad = new Chart(ctxHum, {
-            type: 'line',
-            data: {
-                labels,
-                datasets: [{
-                    label: 'Humedad (%)',
-                    data: hums,
-                    borderColor: 'rgb(6, 182, 212)',
-                    backgroundColor: 'rgba(6, 182, 212, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: false } }
-            }
-        });
-    }
-
+    // Gráfica de Humedad del Suelo
     const ctxSuelo = document.getElementById('chartSuelo');
     if (ctxSuelo) {
         if (chartSuelo) chartSuelo.destroy();
@@ -219,8 +249,22 @@ function actualizarGraficas(historial) {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, max: 100 } }
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'Humedad (%)'
+                        }
+                    }
+                }
             }
         });
     }

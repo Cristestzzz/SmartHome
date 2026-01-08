@@ -21,7 +21,7 @@ const char* WIFI_SSID = "RANZA";
 const char* WIFI_PASSWORD = "23855951";
 
 // Servidor MQTT
-const char* MQTT_SERVER = "192.168.0.114";
+const char* MQTT_SERVER = "192.168.0.107";
 const int MQTT_PORT = 1883;
 const char* MQTT_CLIENT_ID = "ESP32_Receptor";
 
@@ -76,16 +76,17 @@ PubSubClient mqttClient(espClient);
 
 void conectarWiFi() {
   Serial.println("WiFi conectando...");
+  // Usar WIFI_AP_STA como en el código que funciona
   WiFi.mode(WIFI_AP_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  
+
   int intentos = 0;
   while (WiFi.status() != WL_CONNECTED && intentos < 20) {
     delay(500);
     Serial.print(".");
     intentos++;
   }
-  
+
   if (WiFi.status() == WL_CONNECTED) {
     wifiConectado = true;
     Serial.println("\nWiFi OK");
@@ -289,15 +290,15 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len) {
 void setup() {
   Serial.begin(115200);
   delay(2000);
-  
+
   Serial.println("\n=== ESP32 RECEPTOR - MQTT VERSION ===");
-  
+
   // Pines actuadores
   pinMode(MOTOR_PIN, OUTPUT);
   pinMode(BOMBA_PIN, OUTPUT);
   digitalWrite(MOTOR_PIN, LOW);
   digitalWrite(BOMBA_PIN, LOW);
-  
+
   // Pines LEDs
   pinMode(LED_CUARTO1, OUTPUT);
   pinMode(LED_CUARTO2, OUTPUT);
@@ -305,32 +306,40 @@ void setup() {
   digitalWrite(LED_CUARTO1, LOW);
   digitalWrite(LED_CUARTO2, LOW);
   digitalWrite(LED_CUARTO3, LOW);
-  
+
   Serial.println("Pines OK");
-  
+
   // Conectar WiFi
   conectarWiFi();
-  
+
   // Conectar MQTT
   if (wifiConectado) {
     conectarMQTT();
   }
-  
+
   // ESP-NOW
   Serial.print("MAC: ");
   Serial.println(WiFi.macAddress());
-  
+
   if (esp_now_init() != ESP_OK) {
     Serial.println("ESP-NOW FAIL");
     while(1);
   }
-  
+
   esp_now_register_recv_cb(OnDataRecv);
-  
+
   Serial.println("Sistema listo");
   Serial.print("Modo: ");
   Serial.println(modoActual);
-  
+
+  if (wifiConectado) {
+    Serial.print("Canal WiFi: ");
+    Serial.println(WiFi.channel());
+    Serial.println("IMPORTANTE: Configura el ESP32 EMISOR");
+    Serial.print("            con WIFI_CHANNEL = ");
+    Serial.println(WiFi.channel());
+  }
+
   ultimoDatoRecibido = millis();
   ultimoReconectMQTT = millis();
 }
@@ -364,13 +373,16 @@ void loop() {
   }
   
   yield();
-  
-  // Verificar WiFi
+
+  // Verificar WiFi (como en el código antiguo)
   if (WiFi.status() != WL_CONNECTED && wifiConectado) {
     wifiConectado = false;
     mqttConectado = false;
     conectarWiFi();
+    if (wifiConectado) {
+      conectarMQTT();
+    }
   }
-  
+
   delay(100);
 }

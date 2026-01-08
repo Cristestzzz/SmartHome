@@ -103,14 +103,19 @@ async def startup_event():
     print("=" * 60)
     print("🏠 SMARTHOME API - FASTAPI + MQTT + WEBSOCKET")
     print("=" * 60)
-    
+
+    # Capturar el event loop de FastAPI para MQTT
+    import asyncio
+    mqtt_client.event_loop = asyncio.get_event_loop()
+    print("✓ Event loop asignado al cliente MQTT")
+
     # Inicializar base de datos
     try:
         db.crear_tablas()
         print("✓ Base de datos inicializada")
     except Exception as e:
         print(f"✗ Error en base de datos: {e}")
-    
+
     # Conectar MQTT
     mqtt_client.connect()
     mqtt_client.loop_start()

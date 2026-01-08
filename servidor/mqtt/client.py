@@ -15,7 +15,7 @@ class MQTTClient:
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
         self.client.on_disconnect = self.on_disconnect
-        
+
         # Almacenar últimos valores de sensores
         self.sensor_data = {
             "temperatura": None,
@@ -23,10 +23,11 @@ class MQTTClient:
             "humedad_suelo": None,
             "timestamp": None
         }
-        
+
         # Callback para broadcast a WebSocket (se asigna desde main.py)
         self.websocket_broadcast = None
         self.db_manager = None
+        self.event_loop = None  # Event loop de FastAPI
         
     def connect(self):
         """Conectar al broker MQTT"""
@@ -97,19 +98,22 @@ class MQTTClient:
             
     def _broadcast_sensor_update(self, sensor_type, value):
         """Enviar actualización por WebSocket"""
-        if self.websocket_broadcast:
+        if self.websocket_broadcast and self.event_loop:
             data = {
                 "type": "sensor_update",
                 "sensor": sensor_type,
                 "value": value,
                 "timestamp": self.sensor_data["timestamp"]
             }
-            # Crear tarea asíncrona para broadcast
+            # Ejecutar coroutine desde thread externo usando el event loop de FastAPI
             try:
-                asyncio.create_task(self.websocket_broadcast(data))
-            except RuntimeError:
-                # Si no hay event loop, ignorar
-                pass
+                asyncio.run_coroutine_threadsafe(
+                    self.websocket_broadcast(data),
+                    self.event_loop
+                )
+                print(f"✓ Broadcast enviado: {sensor_type} = {value}")
+            except Exception as e:
+                print(f"✗ Error en broadcast: {e}")
                 
     def _save_to_database(self):
         """Guardar datos completos en base de datos"""
